@@ -10,7 +10,7 @@ from app.services.bbdsl_service import export
 
 router = APIRouter()
 
-SUPPORTED_FORMATS = {"bml", "bboalert", "svg", "html", "pbn"}
+SUPPORTED_FORMATS = {"bml", "bboalert", "svg", "html", "pbn", "lin"}
 
 
 class ExportRequest(BaseModel):
@@ -45,6 +45,7 @@ async def export_document(fmt: str, body: ExportRequest):
         "svg": "image/svg+xml",
         "html": "text/html; charset=utf-8",
         "pbn": "text/plain; charset=utf-8",
+        "lin": "text/plain; charset=utf-8",
     }
     return Response(
         content=result,

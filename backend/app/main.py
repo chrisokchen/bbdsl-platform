@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1 import auth, compare, export, registry, validate
+from app.api.v1 import auth, community, compare, drafts, export, registry, share, validate
 from app.core.config import settings
 from app.core.database import create_tables
 
@@ -39,6 +39,9 @@ app.include_router(validate.router, prefix="/api/v1", tags=["validate"])
 app.include_router(export.router, prefix="/api/v1", tags=["export"])
 app.include_router(compare.router, prefix="/api/v1", tags=["compare"])
 app.include_router(auth.router, prefix="/api/v1", tags=["auth"])
+app.include_router(drafts.router, prefix="/api/v1", tags=["drafts"])
+app.include_router(share.router, prefix="/api/v1", tags=["share"])
+app.include_router(community.router, prefix="/api/v1", tags=["community"])
 
 
 @app.get("/health")

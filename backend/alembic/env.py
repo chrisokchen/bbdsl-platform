@@ -7,7 +7,7 @@ from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.core.database import Base
-from app.models import convention, rating, user  # noqa: F401
+from app.models import Convention, Comment, Draft, Namespace, Rating, Share, User  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:

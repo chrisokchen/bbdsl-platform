@@ -32,3 +32,12 @@ class User(Base):
     conventions: Mapped[list["Convention"]] = relationship(  # noqa: F821
         back_populates="author", lazy="selectin"
     )
+    namespaces: Mapped[list["Namespace"]] = relationship(  # noqa: F821
+        back_populates="owner", lazy="selectin"
+    )
+    drafts: Mapped[list["Draft"]] = relationship(  # noqa: F821
+        back_populates="user", lazy="selectin"
+    )
+    shares: Mapped[list["Share"]] = relationship(  # noqa: F821
+        back_populates="user", lazy="selectin"
+    )

@@ -15,6 +15,11 @@ from bbdsl.exporters.svg_tree import export_svg
 from bbdsl.exporters.html_exporter import export_html
 from bbdsl.exporters.pbn_exporter import export_pbn
 
+try:
+    from bbdsl.exporters.lin_exporter import export_lin
+except ImportError:
+    export_lin = None  # LIN exporter may not be available in older bbdsl versions
+
 
 def validate_yaml(content: str) -> dict:
     """Parse and validate BBDSL YAML content.
@@ -49,6 +54,7 @@ def export(content: str, fmt: str, **kwargs) -> str:
         "svg": export_svg,
         "html": export_html,
         "pbn": export_pbn,
+        "lin": _export_lin_str,
     }
     exporter_fn = exporters.get(fmt)
     if exporter_fn is None:
@@ -95,3 +101,90 @@ def diff(
     doc_b = load_document_from_string(content_b)
     report = _compare_systems(doc_a, doc_b, n_deals=n_deals, seed=seed)
     return report.to_dict()
+
+
+def _export_lin_str(doc, **kwargs) -> str:
+    """Export to LIN format.
+
+    LIN (Long Internet Notation) is used by BBO for deal/play records.
+    If the bbdsl package doesn't have a LIN exporter, we fall back to
+    converting PBN output to a basic LIN representation.
+    """
+    if export_lin is not None:
+        return export_lin(doc, **kwargs)
+
+    # Fallback: generate PBN and convert to basic LIN
+    pbn_output = export_pbn(doc, **kwargs)
+    return _pbn_to_lin(pbn_output)
+
+
+def _pbn_to_lin(pbn_text: str) -> str:
+    """Convert PBN text to a basic LIN format.
+
+    This is a simplified conversion for HandViewer embedding.
+    """
+    lines: list[str] = []
+    board_num = ""
+    dealer = ""
+    vul = ""
+    deal = ""
+    event = ""
+
+    for raw_line in pbn_text.split("\n"):
+        line = raw_line.strip()
+        if line.startswith("[Board"):
+            board_num = line.split('"')[1] if '"' in line else ""
+        elif line.startswith("[Dealer"):
+            dealer = line.split('"')[1] if '"' in line else ""
+        elif line.startswith("[Vulnerable") or line.startswith("[Vul"):
+            vul = line.split('"')[1] if '"' in line else ""
+        elif line.startswith("[Deal"):
+            deal = line.split('"')[1] if '"' in line else ""
+        elif line.startswith("[Event"):
+            event = line.split('"')[1] if '"' in line else ""
+
+    # Map PBN vulnerability to LIN format
+    vul_map = {
+        "None": "o", "NS": "n", "EW": "e", "All": "b",
+        "Love": "o", "Both": "b",
+    }
+    lin_vul = vul_map.get(vul, "o")
+
+    # Build LIN line
+    lin_parts = [
+        f"pn|{event or 'N,E,S,W'}",
+        f"st||",
+        f"md|{_pbn_deal_to_lin_md(deal, dealer)}",
+        f"sv|{lin_vul}",
+        f"mb|",  # no bidding sequence in static export
+    ]
+    lines.append("|".join(lin_parts) + "|")
+
+    return "\n".join(lines)
+
+
+def _pbn_deal_to_lin_md(deal_str: str, dealer: str = "N") -> str:
+    """Convert PBN deal string to LIN md (make deal) format.
+
+    PBN deal: 'N:AK.QJ.T98.7654 ...'
+    LIN md: dealer_num + hands
+    """
+    dealer_map = {"N": "1", "E": "2", "S": "3", "W": "4"}
+    dealer_num = dealer_map.get(dealer, "1")
+
+    if not deal_str:
+        return dealer_num
+
+    # Remove initial dealer indicator if present
+    if ":" in deal_str:
+        deal_str = deal_str.split(":", 1)[1]
+
+    hands = deal_str.strip().split()
+    # Convert PBN hand format (S.H.D.C with dots) to LIN (SHDC no separator)
+    lin_hands = []
+    for hand in hands:
+        suits = hand.split(".")
+        # LIN uses SHDC order, PBN already uses SHDC order
+        lin_hands.append("".join(suits))
+
+    return dealer_num + ",".join(lin_hands)

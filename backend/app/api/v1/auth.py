@@ -90,6 +90,87 @@ async def github_login(body: GitHubCallbackRequest, db: AsyncSession = Depends(g
     return TokenResponse(access_token=access_token)
 
 
+class GoogleCallbackRequest(BaseModel):
+    """Google OAuth callback — exchange code for token."""
+    code: str
+    redirect_uri: str = "postmessage"  # for SPA popup flow
+
+
+@router.post("/auth/google", response_model=TokenResponse)
+async def google_login(body: GoogleCallbackRequest, db: AsyncSession = Depends(get_db)):
+    """Exchange Google OAuth code for a platform JWT.
+
+    Steps:
+      1. Exchange the authorization code for Google tokens.
+      2. Fetch user info from Google.
+      3. Upsert user record.
+      4. Return platform JWT.
+    """
+    import httpx
+
+    # Step 1: Exchange code for Google tokens
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "code": body.code,
+                "client_id": settings.google_client_id,
+                "client_secret": settings.google_client_secret,
+                "redirect_uri": body.redirect_uri,
+                "grant_type": "authorization_code",
+            },
+        )
+        if resp.status_code != 200:
+            raise HTTPException(status_code=400, detail="Google OAuth token exchange failed")
+        token_data = resp.json()
+        id_token_str = token_data.get("id_token")
+        access_token = token_data.get("access_token")
+        if not access_token:
+            raise HTTPException(status_code=400, detail="No access_token from Google")
+
+        # Step 2: Fetch user info via userinfo endpoint
+        resp = await client.get(
+            "https://www.googleapis.com/oauth2/v2/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        if resp.status_code != 200:
+            raise HTTPException(status_code=400, detail="Failed to fetch Google user info")
+        g_user = resp.json()
+
+    google_id = str(g_user["id"])
+
+    # Check if user already exists by google_id
+    result = await db.execute(select(User).where(User.google_id == google_id))
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        # Also check by email to link accounts
+        email = g_user.get("email")
+        if email:
+            result = await db.execute(select(User).where(User.email == email))
+            user = result.scalar_one_or_none()
+            if user:
+                # Link Google ID to existing user
+                user.google_id = google_id
+                if not user.avatar_url and g_user.get("picture"):
+                    user.avatar_url = g_user["picture"]
+
+    if user is None:
+        user = User(
+            google_id=google_id,
+            name=g_user.get("name", g_user.get("email", "unknown")),
+            email=g_user.get("email"),
+            avatar_url=g_user.get("picture"),
+        )
+        db.add(user)
+
+    await db.commit()
+    await db.refresh(user)
+
+    platform_token = create_access_token({"sub": user.id})
+    return TokenResponse(access_token=platform_token)
+
+
 @router.get("/me", response_model=UserResponse)
 async def get_me(user: User = Depends(require_user)):
     """Return current authenticated user info."""
