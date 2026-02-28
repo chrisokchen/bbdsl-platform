@@ -1,0 +1,569 @@
+# 精準制 (Precision Club) — BBDSL v0.3 範例
+# Classic Precision Club with modern conventions
+
+bbdsl: "0.3"
+
+system:
+  name:
+    zh-TW: "精準制"
+    en: "Precision Club"
+  version: "2.0.0"
+  authors:
+    - name: "C.C. Wei"
+    - name: "BBDSL Contributors"
+      role: maintainer
+  description:
+    zh-TW: "經典精準制，強梅花開叫，配合現代特約"
+    en: "Classic Precision Club with modern conventions"
+  locale: "zh-TW"
+  license: "CC-BY-SA-4.0"
+  completeness:
+    openings: complete
+    responses_to_1c: partial
+    responses_to_1nt: partial
+    defensive: draft
+    competitive: todo
+    slam_bidding: todo
+
+definitions:
+  strength_methods:
+    hcp:
+      description:
+        zh-TW: "大牌點 (A=4, K=3, Q=2, J=1)"
+        en: "High Card Points"
+      range: [0, 37]
+    controls:
+      description:
+        zh-TW: "控制 (A=2, K=1)"
+        en: "Controls"
+      range: [0, 12]
+
+  patterns:
+    balanced:
+      description:
+        zh-TW: "平均牌型"
+        en: "Balanced"
+      shapes: ["4-3-3-3", "4-4-3-2", "5-3-3-2"]
+
+    semi_balanced:
+      description:
+        zh-TW: "半平均牌型"
+        en: "Semi-balanced"
+      shapes: ["5-4-2-2", "6-3-2-2"]
+
+    precision_2d:
+      description:
+        zh-TW: "精準制 2D 牌型 (短方塊)"
+        en: "Precision 2D shape (short diamond)"
+      shapes_exact: ["4=4=1=4", "4=4=0=5"]
+
+  suit_qualities:
+    good:
+      description:
+        zh-TW: "好套：前三張大牌有兩張"
+        en: "Good: 2 of top 3 honors"
+      top3_honors:
+        min: 2
+    strong:
+      description:
+        zh-TW: "強套：前三張大牌有兩張且 6+"
+        en: "Strong: 2 of top 3, 6+ cards"
+      top3_honors:
+        min: 2
+      min_length: 6
+
+conventions:
+  stayman:
+    id: "bbdsl/stayman-v1"
+    name:
+      zh-TW: "史泰曼"
+      en: "Stayman"
+    category: "notrump"
+    description:
+      zh-TW: "1NT 後詢問四張高花"
+      en: "Ask for 4-card major after 1NT"
+    trigger:
+      after: ["1NT"]
+      bid: "2C"
+    responses:
+      - bid: "2D"
+        meaning:
+          description:
+            zh-TW: "無四張高花"
+            en: "No 4-card major"
+          hand:
+            hearts:
+              max: 3
+            spades:
+              max: 3
+      - bid: "2H"
+        meaning:
+          description:
+            zh-TW: "四張紅心，可能也有四張黑桃"
+            en: "4+ hearts, may also have 4 spades"
+          hand:
+            hearts:
+              min: 4
+      - bid: "2S"
+        meaning:
+          description:
+            zh-TW: "四張黑桃，無四張紅心"
+            en: "4 spades, denies 4 hearts"
+          hand:
+            spades:
+              min: 4
+            hearts:
+              max: 3
+
+  jacoby_transfer:
+    id: "bbdsl/jacoby-transfer-v1"
+    name:
+      zh-TW: "乘乘轉換叫"
+      en: "Jacoby Transfer"
+    category: "notrump"
+    description:
+      zh-TW: "1NT 後轉換至高花"
+      en: "Transfer to major after 1NT"
+    trigger:
+      after: ["1NT"]
+    bids:
+      - bid: "2D"
+        meaning:
+          description:
+            zh-TW: "轉換至紅心"
+            en: "Transfer to hearts"
+          artificial: true
+          alertable: true
+          forcing: one_round
+          transfer_to: "H"
+          hand:
+            hearts:
+              min: 5
+      - bid: "2H"
+        meaning:
+          description:
+            zh-TW: "轉換至黑桃"
+            en: "Transfer to spades"
+          artificial: true
+          alertable: true
+          forcing: one_round
+          transfer_to: "S"
+          hand:
+            spades:
+              min: 5
+
+openings:
+  # === 1C: 強梅花 (16+ HCP) ===
+  - bid: "1C"
+    id: "open-1c"
+    meaning:
+      description:
+        zh-TW: "16+ HCP，人工強梅花"
+        en: "16+ HCP, artificial strong club"
+      hand:
+        hcp:
+          min: 16
+      artificial: true
+      alertable: true
+      forcing: one_round
+    responses:
+      - bid: "1D"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "0-7 HCP，人工否定"
+            en: "0-7 HCP, artificial negative"
+          hand:
+            hcp:
+              max: 7
+          artificial: true
+          alertable: true
+      - bid: "1H"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "8+ HCP，五張以上紅心"
+            en: "8+ HCP, 5+ hearts"
+          hand:
+            hcp:
+              min: 8
+            hearts:
+              min: 5
+          forcing: game
+      - bid: "1S"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "8+ HCP，五張以上黑桃"
+            en: "8+ HCP, 5+ spades"
+          hand:
+            hcp:
+              min: 8
+            spades:
+              min: 5
+          forcing: game
+      - bid: "1NT"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "8-13 HCP，平均牌型，無五張高花"
+            en: "8-13 HCP, balanced, no 5-card major"
+          hand:
+            hcp:
+              min: 8
+              max: 13
+            shape:
+              ref: "balanced"
+          forcing: one_round
+      - bid: "2C"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "8+ HCP，五張以上梅花"
+            en: "8+ HCP, 5+ clubs"
+          hand:
+            hcp:
+              min: 8
+            clubs:
+              min: 5
+          forcing: game
+      - bid: "2NT"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "14+ HCP，平均牌型"
+            en: "14+ HCP, balanced"
+          hand:
+            hcp:
+              min: 14
+            shape:
+              ref: "balanced"
+          forcing: game
+
+  # === 1D: 多用途方塊 (11-15 HCP) ===
+  - bid: "1D"
+    id: "open-1d"
+    meaning:
+      description:
+        zh-TW: "11-15 HCP，可能短方塊"
+        en: "11-15 HCP, possibly short diamond"
+      hand:
+        hcp:
+          min: 11
+          max: 15
+    responses:
+      - bid: "1H"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "8+ HCP，四張以上紅心"
+            en: "8+ HCP, 4+ hearts"
+          hand:
+            hcp:
+              min: 8
+            hearts:
+              min: 4
+          forcing: one_round
+      - bid: "1S"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "8+ HCP，四張以上黑桃"
+            en: "8+ HCP, 4+ spades"
+          hand:
+            hcp:
+              min: 8
+            spades:
+              min: 4
+          forcing: one_round
+      - bid: "1NT"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "8-11 HCP，無四張高花"
+            en: "8-11 HCP, no 4-card major"
+          hand:
+            hcp:
+              min: 8
+              max: 11
+
+  # === 1H: 紅心開叫 (11-15 HCP, 5+ 紅心) ===
+  - bid: "1H"
+    id: "open-1h"
+    meaning:
+      description:
+        zh-TW: "11-15 HCP，五張以上紅心"
+        en: "11-15 HCP, 5+ hearts"
+      hand:
+        hcp:
+          min: 11
+          max: 15
+        hearts:
+          min: 5
+    responses:
+      - bid: "1S"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "8+ HCP，四張以上黑桃"
+            en: "8+ HCP, 4+ spades"
+          hand:
+            hcp:
+              min: 8
+            spades:
+              min: 4
+          forcing: one_round
+      - bid: "1NT"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "8-11 HCP，forcing 1NT"
+            en: "8-11 HCP, forcing 1NT"
+          hand:
+            hcp:
+              min: 8
+              max: 11
+          forcing: one_round
+      - bid: "2H"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "6-9 HCP，三張以上紅心支持"
+            en: "6-9 HCP, 3+ heart support"
+          hand:
+            hcp:
+              min: 6
+              max: 9
+            hearts:
+              min: 3
+
+  # === 1S: 黑桃開叫 (11-15 HCP, 5+ 黑桃) ===
+  - bid: "1S"
+    id: "open-1s"
+    meaning:
+      description:
+        zh-TW: "11-15 HCP，五張以上黑桃"
+        en: "11-15 HCP, 5+ spades"
+      hand:
+        hcp:
+          min: 11
+          max: 15
+        spades:
+          min: 5
+    responses:
+      - bid: "1NT"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "8-11 HCP，forcing 1NT"
+            en: "8-11 HCP, forcing 1NT"
+          hand:
+            hcp:
+              min: 8
+              max: 11
+          forcing: one_round
+      - bid: "2S"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "6-9 HCP，三張以上黑桃支持"
+            en: "6-9 HCP, 3+ spade support"
+          hand:
+            hcp:
+              min: 6
+              max: 9
+            spades:
+              min: 3
+
+  # === 1NT: 無王開叫 (15-17 HCP) ===
+  - bid: "1NT"
+    id: "open-1nt"
+    meaning:
+      description:
+        zh-TW: "15-17 HCP，平均牌型"
+        en: "15-17 HCP, balanced"
+      hand:
+        hcp:
+          min: 15
+          max: 17
+        shape:
+          ref: "balanced"
+    conventions_applied:
+      - ref: "bbdsl/stayman-v1"
+      - ref: "bbdsl/jacoby-transfer-v1"
+    responses:
+      - bid: "2C"
+        by: responder
+        ref: "bbdsl/stayman-v1"
+      - bid: "2D"
+        by: responder
+        ref: "bbdsl/jacoby-transfer-v1"
+        meaning:
+          description:
+            zh-TW: "轉換至紅心"
+            en: "Transfer to hearts"
+          artificial: true
+          alertable: true
+          forcing: one_round
+          transfer_to: "H"
+          hand:
+            hearts:
+              min: 5
+      - bid: "2H"
+        by: responder
+        ref: "bbdsl/jacoby-transfer-v1"
+        meaning:
+          description:
+            zh-TW: "轉換至黑桃"
+            en: "Transfer to spades"
+          artificial: true
+          alertable: true
+          forcing: one_round
+          transfer_to: "S"
+          hand:
+            spades:
+              min: 5
+      - bid: "3NT"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "10-15 HCP，平均牌型，無四張高花"
+            en: "10-15 HCP, balanced, no 4-card major"
+          hand:
+            hcp:
+              min: 10
+              max: 15
+            shape:
+              ref: "balanced"
+
+  # === 2C: 強人工開叫 (22+ HCP 或 Game Forcing) ===
+  - bid: "2C"
+    id: "open-2c"
+    meaning:
+      description:
+        zh-TW: "22+ HCP 或 Game Forcing 牌力"
+        en: "22+ HCP or Game Forcing values"
+      hand:
+        hcp:
+          min: 22
+      artificial: true
+      alertable: true
+      forcing: game
+    responses:
+      - bid: "2D"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "等待叫，0-7 HCP"
+            en: "Waiting bid, 0-7 HCP"
+          hand:
+            hcp:
+              max: 7
+          artificial: true
+          alertable: true
+          forcing: one_round
+      - bid: "2NT"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "8+ HCP，平均牌型"
+            en: "8+ HCP, balanced"
+          hand:
+            hcp:
+              min: 8
+            shape:
+              ref: "balanced"
+          forcing: game
+
+  # === 2D: 精準制二方塊 (11-15 HCP, 4=4=1=4 或 4=4=0=5) ===
+  - bid: "2D"
+    id: "open-2d"
+    meaning:
+      description:
+        zh-TW: "11-15 HCP，精準制短方塊：4=4=1=4 或 4=4=0=5"
+        en: "11-15 HCP, Precision 2D: 4=4=1=4 or 4=4=0=5"
+      hand:
+        hcp:
+          min: 11
+          max: 15
+        shape:
+          ref: "precision_2d"
+      artificial: true
+      alertable: true
+    responses:
+      - bid: "2NT"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "詢問具體牌型"
+            en: "Asking for exact shape"
+          artificial: true
+          alertable: true
+          forcing: one_round
+
+  # === 2H/2S: 弱二 (5-10 HCP, 6+ 張) ===
+  - bid: "2H"
+    id: "open-2h"
+    meaning:
+      description:
+        zh-TW: "5-10 HCP，六張以上紅心"
+        en: "5-10 HCP, 6+ hearts"
+      hand:
+        hcp:
+          min: 5
+          max: 10
+        hearts:
+          min: 6
+      preemptive: true
+    responses:
+      - bid: "2NT"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "特徵詢問"
+            en: "Feature ask"
+          artificial: true
+          alertable: true
+          forcing: one_round
+      - bid: "4H"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "止叫"
+            en: "To play"
+          hand:
+            hearts:
+              min: 3
+
+  - bid: "2S"
+    id: "open-2s"
+    meaning:
+      description:
+        zh-TW: "5-10 HCP，六張以上黑桃"
+        en: "5-10 HCP, 6+ spades"
+      hand:
+        hcp:
+          min: 5
+          max: 10
+        spades:
+          min: 6
+      preemptive: true
+    responses:
+      - bid: "2NT"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "特徵詢問"
+            en: "Feature ask"
+          artificial: true
+          alertable: true
+          forcing: one_round
+      - bid: "4S"
+        by: responder
+        meaning:
+          description:
+            zh-TW: "止叫"
+            en: "To play"
+          hand:
+            spades:
+              min: 3

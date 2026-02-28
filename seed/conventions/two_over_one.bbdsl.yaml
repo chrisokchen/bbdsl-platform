@@ -1,0 +1,529 @@
+# 2/1 Game Forcing — BBDSL v0.3 範例
+# Two Over One Game Force system
+
+bbdsl: "0.3"
+
+system:
+  name:
+    zh-TW: "二一成局強迫"
+    en: "Two Over One Game Force (2/1 GF)"
+  version: "1.0.0"
+  authors:
+    - name: "Mike Lawrence"
+    - name: "BBDSL Contributors"
+      role: maintainer
+  description:
+    zh-TW: "二一成局強迫制度：非跳叫二線回應均為成局強迫"
+    en: "Two Over One Game Forcing: two-level responses (non-jump) are game forcing"
+  locale: "en"
+  license: "CC-BY-SA-4.0"
+  completeness:
+    openings: complete
+    responses_to_1c: partial
+    responses_to_1nt: partial
+    defensive: todo
+    competitive: todo
+    slam_bidding: todo
+
+definitions:
+  strength_methods:
+    hcp:
+      description:
+        zh-TW: "大牌點 (A=4, K=3, Q=2, J=1)"
+        en: "High Card Points"
+      range: [0, 37]
+
+  patterns:
+    balanced:
+      description:
+        zh-TW: "平均牌型"
+        en: "Balanced"
+      shapes: ["4-3-3-3", "4-4-3-2", "5-3-3-2"]
+
+    semi_balanced:
+      description:
+        zh-TW: "半平均牌型"
+        en: "Semi-balanced"
+      shapes: ["5-4-2-2", "6-3-2-2"]
+
+conventions:
+  stayman:
+    id: "bbdsl/stayman-v1"
+    name:
+      zh-TW: "史泰曼"
+      en: "Stayman"
+    category: "notrump"
+    description:
+      en: "Ask for 4-card major after 1NT"
+    trigger:
+      after: ["1NT"]
+      bid: "2C"
+    responses:
+      - bid: "2D"
+        meaning:
+          description: {en: "No 4-card major"}
+          hand:
+            hearts: {max: 3}
+            spades: {max: 3}
+      - bid: "2H"
+        meaning:
+          description: {en: "4+ hearts"}
+          hand:
+            hearts: {min: 4}
+      - bid: "2S"
+        meaning:
+          description: {en: "4 spades, denies 4 hearts"}
+          hand:
+            spades: {min: 4}
+            hearts: {max: 3}
+
+  jacoby_transfer:
+    id: "bbdsl/jacoby-transfer-v1"
+    name:
+      zh-TW: "乘乘轉換叫"
+      en: "Jacoby Transfer"
+    category: "notrump"
+    description:
+      en: "Transfer to major after 1NT"
+    trigger:
+      after: ["1NT"]
+
+  forcing_nt:
+    id: "bbdsl/forcing-nt-v1"
+    name:
+      en: "Forcing 1NT"
+    category: "major"
+    description:
+      en: "Forcing 1NT response to 1H/1S — one round force, opener must rebid"
+    trigger:
+      after: ["1H", "1S"]
+      bid: "1NT"
+
+openings:
+  # === 1C: 12-21 HCP, 2+ clubs ===
+  - bid: "1C"
+    id: "open-1c"
+    meaning:
+      description:
+        en: "12-21 HCP, 2+ clubs (may be prepared)"
+      hand:
+        hcp: {min: 12, max: 21}
+        clubs: {min: 2}
+    responses:
+      - bid: "1D"
+        by: responder
+        meaning:
+          description: {en: "6+ HCP, 4+ diamonds"}
+          hand:
+            hcp: {min: 6}
+            diamonds: {min: 4}
+          forcing: one_round
+      - bid: "1H"
+        by: responder
+        meaning:
+          description: {en: "6+ HCP, 4+ hearts"}
+          hand:
+            hcp: {min: 6}
+            hearts: {min: 4}
+          forcing: one_round
+      - bid: "1S"
+        by: responder
+        meaning:
+          description: {en: "6+ HCP, 4+ spades"}
+          hand:
+            hcp: {min: 6}
+            spades: {min: 4}
+          forcing: one_round
+      - bid: "1NT"
+        by: responder
+        meaning:
+          description: {en: "6-10 HCP, balanced"}
+          hand:
+            hcp: {min: 6, max: 10}
+            shape: {ref: balanced}
+      - bid: "2C"
+        by: responder
+        meaning:
+          description: {en: "13+ HCP, 5+ clubs, game force (2/1)"}
+          hand:
+            hcp: {min: 13}
+            clubs: {min: 5}
+          forcing: game
+      - bid: "2NT"
+        by: responder
+        meaning:
+          description: {en: "13-15 HCP, balanced, invitational to 3NT"}
+          hand:
+            hcp: {min: 13, max: 15}
+            shape: {ref: balanced}
+
+  # === 1D: 12-21 HCP, 2+ diamonds ===
+  - bid: "1D"
+    id: "open-1d"
+    meaning:
+      description:
+        en: "12-21 HCP, 2+ diamonds (may be prepared)"
+      hand:
+        hcp: {min: 12, max: 21}
+        diamonds: {min: 2}
+    responses:
+      - bid: "1H"
+        by: responder
+        meaning:
+          description: {en: "6+ HCP, 4+ hearts"}
+          hand:
+            hcp: {min: 6}
+            hearts: {min: 4}
+          forcing: one_round
+      - bid: "1S"
+        by: responder
+        meaning:
+          description: {en: "6+ HCP, 4+ spades"}
+          hand:
+            hcp: {min: 6}
+            spades: {min: 4}
+          forcing: one_round
+      - bid: "1NT"
+        by: responder
+        meaning:
+          description: {en: "6-10 HCP, balanced"}
+          hand:
+            hcp: {min: 6, max: 10}
+      - bid: "2C"
+        by: responder
+        meaning:
+          description: {en: "13+ HCP, 5+ clubs, game force (2/1)"}
+          hand:
+            hcp: {min: 13}
+            clubs: {min: 5}
+          forcing: game
+      - bid: "2D"
+        by: responder
+        meaning:
+          description: {en: "13+ HCP, 5+ diamonds, game force (2/1)"}
+          hand:
+            hcp: {min: 13}
+            diamonds: {min: 5}
+          forcing: game
+      - bid: "2NT"
+        by: responder
+        meaning:
+          description: {en: "13-15 HCP, balanced"}
+          hand:
+            hcp: {min: 13, max: 15}
+            shape: {ref: balanced}
+
+  # === 1H: 5+ hearts, 12-21 HCP ===
+  - bid: "1H"
+    id: "open-1h"
+    meaning:
+      description:
+        en: "12-21 HCP, 5+ hearts"
+      hand:
+        hcp: {min: 12, max: 21}
+        hearts: {min: 5}
+    responses:
+      - bid: "1S"
+        by: responder
+        meaning:
+          description: {en: "6+ HCP, 4+ spades, forcing"}
+          hand:
+            hcp: {min: 6}
+            spades: {min: 4}
+          forcing: one_round
+      - bid: "1NT"
+        by: responder
+        ref: "bbdsl/forcing-nt-v1"
+        meaning:
+          description: {en: "Forcing 1NT: 6-12 HCP, no fit, no 4+ spades"}
+          hand:
+            hcp: {min: 6, max: 12}
+          artificial: false
+          forcing: one_round
+      - bid: "2C"
+        by: responder
+        meaning:
+          description: {en: "13+ HCP, 5+ clubs, game force (2/1 GF)"}
+          hand:
+            hcp: {min: 13}
+            clubs: {min: 5}
+          forcing: game
+      - bid: "2D"
+        by: responder
+        meaning:
+          description: {en: "13+ HCP, 4+ diamonds, game force (2/1 GF)"}
+          hand:
+            hcp: {min: 13}
+            diamonds: {min: 4}
+          forcing: game
+      - bid: "2H"
+        by: responder
+        meaning:
+          description: {en: "6-9 HCP, 3+ heart support, simple raise"}
+          hand:
+            hcp: {min: 6, max: 9}
+            hearts: {min: 3}
+      - bid: "3H"
+        by: responder
+        meaning:
+          description: {en: "10-12 HCP, 4+ heart support, limit raise"}
+          hand:
+            hcp: {min: 10, max: 12}
+            hearts: {min: 4}
+      - bid: "4H"
+        by: responder
+        meaning:
+          description: {en: "0-5 HCP, 5+ heart support, preemptive"}
+          hand:
+            hcp: {max: 5}
+            hearts: {min: 5}
+          preemptive: true
+
+  # === 1S: 5+ spades, 12-21 HCP ===
+  - bid: "1S"
+    id: "open-1s"
+    meaning:
+      description:
+        en: "12-21 HCP, 5+ spades"
+      hand:
+        hcp: {min: 12, max: 21}
+        spades: {min: 5}
+    responses:
+      - bid: "1NT"
+        by: responder
+        ref: "bbdsl/forcing-nt-v1"
+        meaning:
+          description: {en: "Forcing 1NT: 6-12 HCP, no 3+ spade fit"}
+          hand:
+            hcp: {min: 6, max: 12}
+          forcing: one_round
+      - bid: "2C"
+        by: responder
+        meaning:
+          description: {en: "13+ HCP, 5+ clubs, game force (2/1 GF)"}
+          hand:
+            hcp: {min: 13}
+            clubs: {min: 5}
+          forcing: game
+      - bid: "2D"
+        by: responder
+        meaning:
+          description: {en: "13+ HCP, 4+ diamonds, game force (2/1 GF)"}
+          hand:
+            hcp: {min: 13}
+            diamonds: {min: 4}
+          forcing: game
+      - bid: "2H"
+        by: responder
+        meaning:
+          description: {en: "13+ HCP, 5+ hearts, game force (2/1 GF)"}
+          hand:
+            hcp: {min: 13}
+            hearts: {min: 5}
+          forcing: game
+      - bid: "2S"
+        by: responder
+        meaning:
+          description: {en: "6-9 HCP, 3+ spade support, limit raise"}
+          hand:
+            hcp: {min: 6, max: 9}
+            spades: {min: 3}
+      - bid: "4S"
+        by: responder
+        meaning:
+          description: {en: "0-5 HCP, 5+ spade support, preemptive"}
+          hand:
+            hcp: {max: 5}
+            spades: {min: 5}
+          preemptive: true
+
+  # === 1NT: 15-17 HCP, balanced ===
+  - bid: "1NT"
+    id: "open-1nt"
+    meaning:
+      description:
+        en: "15-17 HCP, balanced"
+      hand:
+        hcp: {min: 15, max: 17}
+        shape: {ref: balanced}
+    conventions_applied:
+      - ref: "bbdsl/stayman-v1"
+      - ref: "bbdsl/jacoby-transfer-v1"
+    responses:
+      - bid: "2C"
+        by: responder
+        ref: "bbdsl/stayman-v1"
+        meaning:
+          description: {en: "Stayman: ask for 4-card major"}
+          artificial: true
+          alertable: true
+          forcing: one_round
+      - bid: "2D"
+        by: responder
+        ref: "bbdsl/jacoby-transfer-v1"
+        meaning:
+          description: {en: "Transfer to hearts, 5+ hearts"}
+          artificial: true
+          alertable: true
+          forcing: one_round
+          transfer_to: "H"
+          hand:
+            hearts: {min: 5}
+      - bid: "2H"
+        by: responder
+        ref: "bbdsl/jacoby-transfer-v1"
+        meaning:
+          description: {en: "Transfer to spades, 5+ spades"}
+          artificial: true
+          alertable: true
+          forcing: one_round
+          transfer_to: "S"
+          hand:
+            spades: {min: 5}
+      - bid: "2NT"
+        by: responder
+        meaning:
+          description: {en: "8-9 HCP, balanced, invitational"}
+          hand:
+            hcp: {min: 8, max: 9}
+            shape: {ref: balanced}
+      - bid: "3NT"
+        by: responder
+        meaning:
+          description: {en: "10-15 HCP, balanced, to play"}
+          hand:
+            hcp: {min: 10, max: 15}
+            shape: {ref: balanced}
+      - bid: "4NT"
+        by: responder
+        meaning:
+          description: {en: "Quantitative invite to 6NT, balanced"}
+          hand:
+            hcp: {min: 16, max: 17}
+            shape: {ref: balanced}
+
+  # === 2C: Strong artificial, 22+ HCP ===
+  - bid: "2C"
+    id: "open-2c"
+    meaning:
+      description:
+        en: "22+ HCP or equivalent, artificial strong"
+      hand:
+        hcp: {min: 22}
+      artificial: true
+      alertable: true
+      forcing: game
+    responses:
+      - bid: "2D"
+        by: responder
+        meaning:
+          description: {en: "Waiting/negative, 0-7 HCP"}
+          artificial: true
+          alertable: true
+          forcing: one_round
+          hand:
+            hcp: {max: 7}
+      - bid: "2H"
+        by: responder
+        meaning:
+          description: {en: "8+ HCP, 5+ hearts, positive"}
+          hand:
+            hcp: {min: 8}
+            hearts: {min: 5}
+          forcing: game
+      - bid: "2S"
+        by: responder
+        meaning:
+          description: {en: "8+ HCP, 5+ spades, positive"}
+          hand:
+            hcp: {min: 8}
+            spades: {min: 5}
+          forcing: game
+      - bid: "2NT"
+        by: responder
+        meaning:
+          description: {en: "8+ HCP, balanced, positive"}
+          hand:
+            hcp: {min: 8}
+            shape: {ref: balanced}
+          forcing: game
+
+  # === 2D/2H/2S: Weak two bids ===
+  - bid: "2D"
+    id: "open-2d"
+    meaning:
+      description:
+        en: "6-11 HCP, exactly 6 diamonds, weak two"
+      hand:
+        hcp: {min: 6, max: 11}
+        diamonds: {min: 6, max: 6}
+      preemptive: true
+    responses:
+      - bid: "2NT"
+        by: responder
+        meaning:
+          description: {en: "Ogust: asking bid, feature ask"}
+          artificial: true
+          alertable: true
+          forcing: one_round
+      - bid: "3D"
+        by: responder
+        meaning:
+          description: {en: "Preemptive raise"}
+          hand:
+            diamonds: {min: 3}
+          preemptive: true
+      - bid: "3NT"
+        by: responder
+        meaning:
+          description: {en: "To play with diamond source"}
+          hand:
+            hcp: {min: 14}
+
+  - bid: "2H"
+    id: "open-2h"
+    meaning:
+      description:
+        en: "6-11 HCP, exactly 6 hearts, weak two"
+      hand:
+        hcp: {min: 6, max: 11}
+        hearts: {min: 6, max: 6}
+      preemptive: true
+    responses:
+      - bid: "2NT"
+        by: responder
+        meaning:
+          description: {en: "Ogust: feature ask"}
+          artificial: true
+          alertable: true
+          forcing: one_round
+      - bid: "4H"
+        by: responder
+        meaning:
+          description: {en: "To play, values or preemptive"}
+          hand:
+            hearts: {min: 3}
+
+  - bid: "2S"
+    id: "open-2s"
+    meaning:
+      description:
+        en: "6-11 HCP, exactly 6 spades, weak two"
+      hand:
+        hcp: {min: 6, max: 11}
+        spades: {min: 6, max: 6}
+      preemptive: true
+    responses:
+      - bid: "2NT"
+        by: responder
+        meaning:
+          description: {en: "Ogust: feature ask"}
+          artificial: true
+          alertable: true
+          forcing: one_round
+      - bid: "4S"
+        by: responder
+        meaning:
+          description: {en: "To play, values or preemptive"}
+          hand:
+            spades: {min: 3}

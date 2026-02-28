@@ -1,0 +1,687 @@
+# SAYC (Standard American Yellow Card) — BBDSL v0.3 範例
+# Standard American bidding system as popularized by ACBL
+
+bbdsl: "0.3"
+
+system:
+  name:
+    zh-TW: "標準美式（黃卡）"
+    en: "Standard American Yellow Card (SAYC)"
+  version: "1.0.0"
+  authors:
+    - name: "ACBL"
+    - name: "BBDSL Contributors"
+      role: maintainer
+  description:
+    zh-TW: "ACBL 標準美式叫牌制度（黃卡），最廣泛使用的美式自然叫牌制度"
+    en: "ACBL Standard American Yellow Card, the most widely used natural American system"
+  locale: "en"
+  license: "CC-BY-SA-4.0"
+  completeness:
+    openings: complete
+    responses_to_1c: partial
+    responses_to_1nt: partial
+    defensive: todo
+    competitive: todo
+    slam_bidding: todo
+
+definitions:
+  strength_methods:
+    hcp:
+      description:
+        zh-TW: "大牌點 (A=4, K=3, Q=2, J=1)"
+        en: "High Card Points"
+      range: [0, 37]
+
+  patterns:
+    balanced:
+      description:
+        zh-TW: "平均牌型"
+        en: "Balanced"
+      shapes: ["4-3-3-3", "4-4-3-2", "5-3-3-2"]
+
+    semi_balanced:
+      description:
+        zh-TW: "半平均牌型"
+        en: "Semi-balanced"
+      shapes: ["5-4-2-2", "6-3-2-2"]
+
+conventions:
+  stayman:
+    id: "bbdsl/stayman-v1"
+    name:
+      zh-TW: "史泰曼"
+      en: "Stayman"
+    category: "notrump"
+    description:
+      zh-TW: "1NT 後詢問四張高花"
+      en: "Ask for 4-card major after 1NT"
+    trigger:
+      after: ["1NT"]
+      bid: "2C"
+    responses:
+      - bid: "2D"
+        meaning:
+          description:
+            en: "No 4-card major"
+          hand:
+            hearts: {max: 3}
+            spades: {max: 3}
+      - bid: "2H"
+        meaning:
+          description:
+            en: "4+ hearts, may also have 4 spades"
+          hand:
+            hearts: {min: 4}
+      - bid: "2S"
+        meaning:
+          description:
+            en: "4 spades, denies 4 hearts"
+          hand:
+            spades: {min: 4}
+            hearts: {max: 3}
+
+  jacoby_transfer:
+    id: "bbdsl/jacoby-transfer-v1"
+    name:
+      zh-TW: "乘乘轉換叫"
+      en: "Jacoby Transfer"
+    category: "notrump"
+    description:
+      zh-TW: "1NT 後轉換至高花"
+      en: "Transfer to major after 1NT"
+    trigger:
+      after: ["1NT"]
+
+openings:
+  # === 1C: 1+ clubs, 12-21 HCP ===
+  - bid: "1C"
+    id: "open-1c"
+    meaning:
+      description:
+        zh-TW: "12-21 HCP，1+ 梅花（可能短梅花）"
+        en: "12-21 HCP, 1+ clubs (may be short)"
+      hand:
+        hcp: {min: 12, max: 21}
+        clubs: {min: 1}
+    responses:
+      - bid: "1D"
+        by: responder
+        meaning:
+          description:
+            en: "6+ HCP, 4+ diamonds"
+          hand:
+            hcp: {min: 6}
+            diamonds: {min: 4}
+          forcing: one_round
+      - bid: "1H"
+        by: responder
+        meaning:
+          description:
+            en: "6+ HCP, 4+ hearts"
+          hand:
+            hcp: {min: 6}
+            hearts: {min: 4}
+          forcing: one_round
+      - bid: "1S"
+        by: responder
+        meaning:
+          description:
+            en: "6+ HCP, 4+ spades"
+          hand:
+            hcp: {min: 6}
+            spades: {min: 4}
+          forcing: one_round
+      - bid: "1NT"
+        by: responder
+        meaning:
+          description:
+            en: "6-10 HCP, balanced, no 4-card major"
+          hand:
+            hcp: {min: 6, max: 10}
+            shape: {ref: balanced}
+      - bid: "2C"
+        by: responder
+        meaning:
+          description:
+            en: "10+ HCP, 5+ clubs, forcing"
+          hand:
+            hcp: {min: 10}
+            clubs: {min: 5}
+          forcing: one_round
+      - bid: "2NT"
+        by: responder
+        meaning:
+          description:
+            en: "13-15 HCP, balanced, invitational"
+          hand:
+            hcp: {min: 13, max: 15}
+            shape: {ref: balanced}
+      - bid: "3NT"
+        by: responder
+        meaning:
+          description:
+            en: "16-18 HCP, balanced, to play"
+          hand:
+            hcp: {min: 16, max: 18}
+            shape: {ref: balanced}
+
+  # === 1D: 1+ diamonds, 12-21 HCP ===
+  - bid: "1D"
+    id: "open-1d"
+    meaning:
+      description:
+        zh-TW: "12-21 HCP，1+ 方塊"
+        en: "12-21 HCP, 1+ diamonds (may be short)"
+      hand:
+        hcp: {min: 12, max: 21}
+        diamonds: {min: 1}
+    responses:
+      - bid: "1H"
+        by: responder
+        meaning:
+          description:
+            en: "6+ HCP, 4+ hearts"
+          hand:
+            hcp: {min: 6}
+            hearts: {min: 4}
+          forcing: one_round
+      - bid: "1S"
+        by: responder
+        meaning:
+          description:
+            en: "6+ HCP, 4+ spades"
+          hand:
+            hcp: {min: 6}
+            spades: {min: 4}
+          forcing: one_round
+      - bid: "1NT"
+        by: responder
+        meaning:
+          description:
+            en: "6-10 HCP, balanced"
+          hand:
+            hcp: {min: 6, max: 10}
+      - bid: "2D"
+        by: responder
+        meaning:
+          description:
+            en: "10+ HCP, 5+ diamonds, forcing"
+          hand:
+            hcp: {min: 10}
+            diamonds: {min: 5}
+          forcing: one_round
+      - bid: "2NT"
+        by: responder
+        meaning:
+          description:
+            en: "13-15 HCP, balanced, invitational"
+          hand:
+            hcp: {min: 13, max: 15}
+            shape: {ref: balanced}
+
+  # === 1H: 5+ hearts, 12-21 HCP ===
+  - bid: "1H"
+    id: "open-1h"
+    meaning:
+      description:
+        zh-TW: "12-21 HCP，五張以上紅心"
+        en: "12-21 HCP, 5+ hearts"
+      hand:
+        hcp: {min: 12, max: 21}
+        hearts: {min: 5}
+    responses:
+      - bid: "1S"
+        by: responder
+        meaning:
+          description:
+            en: "6+ HCP, 4+ spades"
+          hand:
+            hcp: {min: 6}
+            spades: {min: 4}
+          forcing: one_round
+      - bid: "1NT"
+        by: responder
+        meaning:
+          description:
+            en: "6-12 HCP, no 3+ heart support, no 4+ spades"
+          hand:
+            hcp: {min: 6, max: 12}
+          forcing: one_round
+      - bid: "2C"
+        by: responder
+        meaning:
+          description:
+            en: "13+ HCP, 4+ clubs, game force (2/1)"
+          hand:
+            hcp: {min: 13}
+            clubs: {min: 4}
+          forcing: game
+      - bid: "2D"
+        by: responder
+        meaning:
+          description:
+            en: "13+ HCP, 4+ diamonds, game force (2/1)"
+          hand:
+            hcp: {min: 13}
+            diamonds: {min: 4}
+          forcing: game
+      - bid: "2H"
+        by: responder
+        meaning:
+          description:
+            en: "6-9 HCP, 3+ heart support, simple raise"
+          hand:
+            hcp: {min: 6, max: 9}
+            hearts: {min: 3}
+      - bid: "3H"
+        by: responder
+        meaning:
+          description:
+            en: "10-12 HCP, 4+ heart support, limit raise"
+          hand:
+            hcp: {min: 10, max: 12}
+            hearts: {min: 4}
+      - bid: "4H"
+        by: responder
+        meaning:
+          description:
+            en: "0-5 HCP, 5+ heart support, preemptive raise"
+          hand:
+            hcp: {max: 5}
+            hearts: {min: 5}
+          preemptive: true
+
+  # === 1S: 5+ spades, 12-21 HCP ===
+  - bid: "1S"
+    id: "open-1s"
+    meaning:
+      description:
+        zh-TW: "12-21 HCP，五張以上黑桃"
+        en: "12-21 HCP, 5+ spades"
+      hand:
+        hcp: {min: 12, max: 21}
+        spades: {min: 5}
+    responses:
+      - bid: "1NT"
+        by: responder
+        meaning:
+          description:
+            en: "6-12 HCP, no 3+ spade support"
+          hand:
+            hcp: {min: 6, max: 12}
+          forcing: one_round
+      - bid: "2C"
+        by: responder
+        meaning:
+          description:
+            en: "13+ HCP, 4+ clubs, game force (2/1)"
+          hand:
+            hcp: {min: 13}
+            clubs: {min: 4}
+          forcing: game
+      - bid: "2D"
+        by: responder
+        meaning:
+          description:
+            en: "13+ HCP, 4+ diamonds, game force (2/1)"
+          hand:
+            hcp: {min: 13}
+            diamonds: {min: 4}
+          forcing: game
+      - bid: "2H"
+        by: responder
+        meaning:
+          description:
+            en: "13+ HCP, 5+ hearts, game force (2/1)"
+          hand:
+            hcp: {min: 13}
+            hearts: {min: 5}
+          forcing: game
+      - bid: "2S"
+        by: responder
+        meaning:
+          description:
+            en: "6-9 HCP, 3+ spade support, simple raise"
+          hand:
+            hcp: {min: 6, max: 9}
+            spades: {min: 3}
+      - bid: "3S"
+        by: responder
+        meaning:
+          description:
+            en: "10-12 HCP, 4+ spade support, limit raise"
+          hand:
+            hcp: {min: 10, max: 12}
+            spades: {min: 4}
+      - bid: "4S"
+        by: responder
+        meaning:
+          description:
+            en: "0-5 HCP, 5+ spade support, preemptive raise"
+          hand:
+            hcp: {max: 5}
+            spades: {min: 5}
+          preemptive: true
+
+  # === 1NT: 15-17 HCP, balanced ===
+  - bid: "1NT"
+    id: "open-1nt"
+    meaning:
+      description:
+        zh-TW: "15-17 HCP，平均牌型"
+        en: "15-17 HCP, balanced"
+      hand:
+        hcp: {min: 15, max: 17}
+        shape: {ref: balanced}
+    conventions_applied:
+      - ref: "bbdsl/stayman-v1"
+      - ref: "bbdsl/jacoby-transfer-v1"
+    responses:
+      - bid: "2C"
+        by: responder
+        ref: "bbdsl/stayman-v1"
+        meaning:
+          description:
+            en: "Stayman: ask for 4-card major"
+          artificial: true
+          alertable: true
+          forcing: one_round
+      - bid: "2D"
+        by: responder
+        ref: "bbdsl/jacoby-transfer-v1"
+        meaning:
+          description:
+            en: "Transfer to hearts"
+          artificial: true
+          alertable: true
+          forcing: one_round
+          transfer_to: "H"
+          hand:
+            hearts: {min: 5}
+      - bid: "2H"
+        by: responder
+        ref: "bbdsl/jacoby-transfer-v1"
+        meaning:
+          description:
+            en: "Transfer to spades"
+          artificial: true
+          alertable: true
+          forcing: one_round
+          transfer_to: "S"
+          hand:
+            spades: {min: 5}
+      - bid: "2NT"
+        by: responder
+        meaning:
+          description:
+            en: "8-9 HCP, balanced, invitational"
+          hand:
+            hcp: {min: 8, max: 9}
+            shape: {ref: balanced}
+      - bid: "3NT"
+        by: responder
+        meaning:
+          description:
+            en: "10-15 HCP, balanced, to play"
+          hand:
+            hcp: {min: 10, max: 15}
+            shape: {ref: balanced}
+
+  # === 2C: Strong artificial, 22+ HCP ===
+  - bid: "2C"
+    id: "open-2c"
+    meaning:
+      description:
+        zh-TW: "22+ HCP 或 Game Forcing 牌力，人工強梅花"
+        en: "22+ HCP or game-forcing values, artificial"
+      hand:
+        hcp: {min: 22}
+      artificial: true
+      alertable: true
+      forcing: game
+    responses:
+      - bid: "2D"
+        by: responder
+        meaning:
+          description:
+            en: "Waiting (negative or waiting), 0-7 HCP"
+          artificial: true
+          alertable: true
+          forcing: one_round
+          hand:
+            hcp: {max: 7}
+      - bid: "2H"
+        by: responder
+        meaning:
+          description:
+            en: "8+ HCP, 5+ hearts"
+          hand:
+            hcp: {min: 8}
+            hearts: {min: 5}
+          forcing: game
+      - bid: "2S"
+        by: responder
+        meaning:
+          description:
+            en: "8+ HCP, 5+ spades"
+          hand:
+            hcp: {min: 8}
+            spades: {min: 5}
+          forcing: game
+      - bid: "2NT"
+        by: responder
+        meaning:
+          description:
+            en: "8+ HCP, balanced"
+          hand:
+            hcp: {min: 8}
+            shape: {ref: balanced}
+          forcing: game
+
+  # === 2D: Weak two, 6-11 HCP, exactly 6 diamonds ===
+  - bid: "2D"
+    id: "open-2d"
+    meaning:
+      description:
+        zh-TW: "6-11 HCP，六張方塊，弱二"
+        en: "6-11 HCP, exactly 6 diamonds, weak two"
+      hand:
+        hcp: {min: 6, max: 11}
+        diamonds: {min: 6, max: 6}
+      preemptive: true
+    responses:
+      - bid: "2NT"
+        by: responder
+        meaning:
+          description:
+            en: "Feature ask (Ogust or new minor forcing)"
+          artificial: true
+          alertable: true
+          forcing: one_round
+      - bid: "3D"
+        by: responder
+        meaning:
+          description:
+            en: "Preemptive raise, no game interest"
+          hand:
+            diamonds: {min: 3}
+          preemptive: true
+
+  # === 2H: Weak two, 6-11 HCP, exactly 6 hearts ===
+  - bid: "2H"
+    id: "open-2h"
+    meaning:
+      description:
+        zh-TW: "6-11 HCP，六張紅心，弱二"
+        en: "6-11 HCP, exactly 6 hearts, weak two"
+      hand:
+        hcp: {min: 6, max: 11}
+        hearts: {min: 6, max: 6}
+      preemptive: true
+    responses:
+      - bid: "2NT"
+        by: responder
+        meaning:
+          description:
+            en: "Feature ask"
+          artificial: true
+          alertable: true
+          forcing: one_round
+      - bid: "4H"
+        by: responder
+        meaning:
+          description:
+            en: "To play, preemptive or values"
+          hand:
+            hearts: {min: 3}
+
+  # === 2S: Weak two, 6-11 HCP, exactly 6 spades ===
+  - bid: "2S"
+    id: "open-2s"
+    meaning:
+      description:
+        zh-TW: "6-11 HCP，六張黑桃，弱二"
+        en: "6-11 HCP, exactly 6 spades, weak two"
+      hand:
+        hcp: {min: 6, max: 11}
+        spades: {min: 6, max: 6}
+      preemptive: true
+    responses:
+      - bid: "2NT"
+        by: responder
+        meaning:
+          description:
+            en: "Feature ask"
+          artificial: true
+          alertable: true
+          forcing: one_round
+      - bid: "4S"
+        by: responder
+        meaning:
+          description:
+            en: "To play, preemptive or values"
+          hand:
+            spades: {min: 3}
+
+  # === 2NT: 20-21 HCP, balanced ===
+  - bid: "2NT"
+    id: "open-2nt"
+    meaning:
+      description:
+        zh-TW: "20-21 HCP，平均牌型"
+        en: "20-21 HCP, balanced"
+      hand:
+        hcp: {min: 20, max: 21}
+        shape: {ref: balanced}
+    responses:
+      - bid: "3C"
+        by: responder
+        meaning:
+          description:
+            en: "Stayman after 2NT"
+          artificial: true
+          alertable: true
+          forcing: one_round
+      - bid: "3D"
+        by: responder
+        meaning:
+          description:
+            en: "Transfer to hearts"
+          artificial: true
+          alertable: true
+          forcing: one_round
+          transfer_to: "H"
+      - bid: "3H"
+        by: responder
+        meaning:
+          description:
+            en: "Transfer to spades"
+          artificial: true
+          alertable: true
+          forcing: one_round
+          transfer_to: "S"
+      - bid: "3NT"
+        by: responder
+        meaning:
+          description:
+            en: "To play, balanced hand"
+          hand:
+            hcp: {min: 5, max: 9}
+            shape: {ref: balanced}
+
+  # === 3C: Preemptive, 5-10 HCP, 7+ clubs ===
+  - bid: "3C"
+    id: "open-3c"
+    meaning:
+      description:
+        zh-TW: "5-10 HCP，七張以上梅花，先制叫"
+        en: "5-10 HCP, 7+ clubs, preemptive"
+      hand:
+        hcp: {min: 5, max: 10}
+        clubs: {min: 7, max: 7}
+      preemptive: true
+    responses:
+      - bid: "3NT"
+        by: responder
+        meaning:
+          description:
+            en: "To play with club source"
+          hand:
+            hcp: {min: 13}
+
+  # === 3D: Preemptive, 5-10 HCP, 7+ diamonds ===
+  - bid: "3D"
+    id: "open-3d"
+    meaning:
+      description:
+        zh-TW: "5-10 HCP，七張以上方塊，先制叫"
+        en: "5-10 HCP, 7+ diamonds, preemptive"
+      hand:
+        hcp: {min: 5, max: 10}
+        diamonds: {min: 7}    # 7+ distinguishes from weak 2D (exactly 6)
+      preemptive: true
+    responses:
+      - bid: "3NT"
+        by: responder
+        meaning:
+          description:
+            en: "To play with diamond source"
+          hand:
+            hcp: {min: 13}
+
+  # === 3H: Preemptive, 5-10 HCP, 7+ hearts ===
+  - bid: "3H"
+    id: "open-3h"
+    meaning:
+      description:
+        zh-TW: "5-10 HCP，七張以上紅心，先制叫"
+        en: "5-10 HCP, 7+ hearts, preemptive"
+      hand:
+        hcp: {min: 5, max: 10}
+        hearts: {min: 7}    # 7+ distinguishes from weak 2H (exactly 6)
+      preemptive: true
+    responses:
+      - bid: "4H"
+        by: responder
+        meaning:
+          description:
+            en: "To play, raise or values"
+
+  # === 3S: Preemptive, 5-10 HCP, 7+ spades ===
+  - bid: "3S"
+    id: "open-3s"
+    meaning:
+      description:
+        zh-TW: "5-10 HCP，七張以上黑桃，先制叫"
+        en: "5-10 HCP, 7+ spades, preemptive"
+      hand:
+        hcp: {min: 5, max: 10}
+        spades: {min: 7}    # 7+ distinguishes from weak 2S (exactly 6)
+      preemptive: true
+    responses:
+      - bid: "4S"
+        by: responder
+        meaning:
+          description:
+            en: "To play, raise or values"

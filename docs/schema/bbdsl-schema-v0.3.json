@@ -1,0 +1,661 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bbdsl.org/schema/0.3.json",
+  "title": "BBDSL v0.3 - Bridge Bidding Description Specification Language",
+  "description": "宣告式、YAML-based、結構化語義的橋牌叫牌制度描述語言",
+  "type": "object",
+  "required": ["bbdsl", "system", "openings"],
+  "properties": {
+    "bbdsl": { "type": "string", "const": "0.3" },
+    "system": { "$ref": "#/$defs/SystemMetadata" },
+    "definitions": { "$ref": "#/$defs/Definitions" },
+    "contexts": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/Context" }
+    },
+    "conventions": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/Convention" }
+    },
+    "openings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/BidNode" }
+    },
+    "defensive": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/DefensiveEntry" }
+    },
+    "defense_to": {
+      "type": "array",
+      "description": "對特定對手制度的防禦策略",
+      "items": { "$ref": "#/$defs/DefenseToEntry" }
+    },
+    "selection_rules": {
+      "type": "object",
+      "description": "叫牌優先權規則引擎（Desiderius-inspired）",
+      "additionalProperties": { "$ref": "#/$defs/SelectionRuleSet" }
+    },
+    "validation": { "$ref": "#/$defs/ValidationRules" },
+    "export": { "$ref": "#/$defs/ExportConfig" },
+    "import": { "$ref": "#/$defs/ImportConfig" }
+  },
+
+  "$defs": {
+
+    "I18nString": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "patternProperties": {
+            "^[a-z]{2}(-[A-Z]{2})?$": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+
+    "Range": {
+      "type": "object",
+      "properties": {
+        "min": { "type": "integer" },
+        "max": { "type": "integer" },
+        "exactly": { "type": "integer" }
+      }
+    },
+
+    "ForcingLevel": {
+      "type": "string",
+      "enum": ["signoff", "none", "invitational", "one_round", "game", "slam"]
+    },
+
+    "Seat": {
+      "oneOf": [
+        { "type": "string", "enum": ["1st", "2nd", "3rd", "4th", "any"] },
+        { "type": "array", "items": { "type": "string", "enum": ["1st", "2nd", "3rd", "4th"] } }
+      ]
+    },
+
+    "Vulnerability": {
+      "oneOf": [
+        { "type": "string", "enum": ["none", "us", "them", "both", "any"] },
+        { "type": "array", "items": { "type": "string", "enum": ["none", "us", "them", "both"] } }
+      ]
+    },
+
+    "BidType": {
+      "type": "string",
+      "enum": [
+        "pass", "simple_overcall", "jump_overcall", "preempt",
+        "cue_bid", "nt_overcall", "takeout_double", "penalty_double",
+        "artificial", "raise", "new_suit", "redouble"
+      ]
+    },
+
+    "OpponentPattern": {
+      "description": "對手行為模式匹配",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": ["pass", "double", "any_action", "any_bid"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "bid": { "type": "string" },
+            "bid_range": {
+              "type": "array",
+              "items": { "type": "string" },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "level": {
+              "oneOf": [
+                { "type": "integer", "minimum": 1, "maximum": 7 },
+                { "$ref": "#/$defs/Range" },
+                { "type": "array", "items": { "type": "integer" } }
+              ]
+            },
+            "suit": {
+              "type": "string",
+              "description": "具體花色 (C/D/H/S) 或群組 (major/minor)"
+            },
+            "bid_type": { "$ref": "#/$defs/BidType" },
+            "any_of": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/OpponentPattern" }
+            },
+            "all_of": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/OpponentPattern" }
+            },
+            "not": { "$ref": "#/$defs/OpponentPattern" }
+          }
+        }
+      ]
+    },
+
+    "ShapeRef": {
+      "oneOf": [
+        { "type": "string", "enum": ["any"] },
+        {
+          "type": "object",
+          "properties": {
+            "ref": { "type": "string" },
+            "not_ref": { "type": "string" }
+          }
+        }
+      ]
+    },
+
+    "SuitQualityRef": {
+      "type": "object",
+      "properties": {
+        "ref": { "type": "string" }
+      }
+    },
+
+    "HandConstraint": {
+      "type": "object",
+      "properties": {
+        "hcp": { "$ref": "#/$defs/Range" },
+        "controls": { "$ref": "#/$defs/Range" },
+        "losing_tricks": { "$ref": "#/$defs/Range" },
+        "total_points": { "$ref": "#/$defs/Range" },
+        "shape": { "$ref": "#/$defs/ShapeRef" },
+        "clubs": { "$ref": "#/$defs/Range" },
+        "diamonds": { "$ref": "#/$defs/Range" },
+        "hearts": { "$ref": "#/$defs/Range" },
+        "spades": { "$ref": "#/$defs/Range" },
+        "bid_suit": { "$ref": "#/$defs/Range" },
+        "longest_suit": { "$ref": "#/$defs/Range" },
+        "second_suit": { "$ref": "#/$defs/Range" },
+        "four_card_major": { "type": "boolean" },
+        "support_for_unbid_suits": { "type": "boolean" },
+        "support_for_partner": { "$ref": "#/$defs/Range" },
+        "stopper_in": { "type": "string" },
+        "specific_cards": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[AKQJT98765432][SHDC]$" },
+          "description": "Dealer-compatible hascard, e.g. ['AS', 'KH']"
+        },
+        "suit_quality": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "ref": { "type": "string" },
+              "top3_honors": { "$ref": "#/$defs/Range" },
+              "top5_honors": { "$ref": "#/$defs/Range" }
+            }
+          }
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "any_of": { "type": "array", "items": { "$ref": "#/$defs/HandConstraint" } },
+              "all_of": { "type": "array", "items": { "$ref": "#/$defs/HandConstraint" } },
+              "when": { "type": "string" },
+              "description": { "$ref": "#/$defs/I18nString" }
+            }
+          }
+        },
+        "_unresolved": {
+          "type": "boolean",
+          "description": "BML 匯入時無法自動推斷的約束"
+        },
+        "_bml_original": {
+          "type": "string",
+          "description": "BML 匯入時保留的原始文字"
+        }
+      }
+    },
+
+    "BidMeaning": {
+      "type": "object",
+      "properties": {
+        "description": { "$ref": "#/$defs/I18nString" },
+        "hand": { "$ref": "#/$defs/HandConstraint" },
+        "artificial": { "type": "boolean", "default": false },
+        "alertable": { "type": "boolean", "default": false },
+        "preemptive": { "type": "boolean", "default": false },
+        "forcing": { "$ref": "#/$defs/ForcingLevel" },
+        "transfer_to": { "type": "string" },
+        "notes": { "$ref": "#/$defs/I18nString" },
+        "_bml_original": { "type": "string" }
+      }
+    },
+
+    "Context": {
+      "type": "object",
+      "properties": {
+        "seat": { "$ref": "#/$defs/Seat" },
+        "vulnerability": { "$ref": "#/$defs/Vulnerability" },
+        "opponent_action": { "$ref": "#/$defs/OpponentPattern" },
+        "precondition": { "type": "string" }
+      }
+    },
+
+    "ContextOverride": {
+      "type": "object",
+      "required": ["context"],
+      "properties": {
+        "context": {
+          "oneOf": [
+            { "$ref": "#/$defs/Context" },
+            { "type": "object", "properties": { "ref": { "type": "string" } } }
+          ]
+        },
+        "meaning": { "$ref": "#/$defs/BidMeaning" }
+      }
+    },
+
+    "ForeachSuit": {
+      "type": "object",
+      "required": ["variable", "over"],
+      "properties": {
+        "variable": { "type": "string", "maxLength": 16 },
+        "over": {
+          "type": "string",
+          "enum": ["majors", "minors", "reds", "blacks", "all"]
+        },
+        "transfer_bid": { "type": "string" },
+        "target_suit": { "type": "string" },
+        "exclude_when": { "type": "array" },
+        "condition": { "type": "string" }
+      }
+    },
+
+    "OpponentBranch": {
+      "type": "object",
+      "required": ["when_opponent"],
+      "properties": {
+        "when_opponent": { "$ref": "#/$defs/OpponentPattern" },
+        "bids": { "type": "array", "items": { "$ref": "#/$defs/BidNode" } },
+        "convention_ref": { "type": "string" }
+      }
+    },
+
+    "BidNode": {
+      "type": "object",
+      "properties": {
+        "bid": { "type": "string" },
+        "id": { "type": "string" },
+        "by": {
+          "type": "string",
+          "enum": ["opener", "responder", "overcaller", "advancer"]
+        },
+        "ref": { "type": "string" },
+        "foreach_suit": { "$ref": "#/$defs/ForeachSuit" },
+        "meaning": { "$ref": "#/$defs/BidMeaning" },
+        "priority": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000,
+          "description": "叫牌選擇優先權（數字越大越優先）"
+        },
+        "context_overrides": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ContextOverride" }
+        },
+        "conventions_applied": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "ref": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_-]{0,31}/[a-z][a-z0-9_-]{0,63}-v[0-9]+$",
+                "description": "Convention namespace ID"
+              },
+              "parameters": { "type": "object" }
+            }
+          }
+        },
+        "responses": {
+          "oneOf": [
+            { "type": "array", "items": { "$ref": "#/$defs/BidNode" } },
+            { "type": "array", "items": { "$ref": "#/$defs/OpponentBranch" } }
+          ]
+        },
+        "continuations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/BidNode" }
+        },
+        "when": {
+          "type": "string",
+          "description": "條件展開（用於參數化 Convention）"
+        }
+      }
+    },
+
+    "Convention": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,31}/[a-z][a-z0-9_-]{0,63}-v[0-9]+$"
+        },
+        "name": { "$ref": "#/$defs/I18nString" },
+        "version": { "type": "string" },
+        "category": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "description": { "$ref": "#/$defs/I18nString" },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "enum": ["bid", "boolean", "integer", "string", "suit"] },
+              "default": {},
+              "description": { "$ref": "#/$defs/I18nString" }
+            }
+          }
+        },
+        "trigger": {
+          "type": "object",
+          "properties": {
+            "after": { "type": "array", "items": { "type": "string" } },
+            "bid": { "type": "string" }
+          }
+        },
+        "requires": { "type": "array", "items": { "type": "string" } },
+        "conflicts_with": { "type": "array", "items": { "type": "string" } },
+        "recommends": { "type": "array", "items": { "type": "string" } },
+        "foreach_suit": { "$ref": "#/$defs/ForeachSuit" },
+        "responder_hand": { "$ref": "#/$defs/HandConstraint" },
+        "responses": { "type": "array", "items": { "$ref": "#/$defs/BidNode" } },
+        "bids": { "type": "array", "items": { "$ref": "#/$defs/BidNode" } }
+      }
+    },
+
+    "SelectionRuleSet": {
+      "type": "object",
+      "properties": {
+        "description": { "$ref": "#/$defs/I18nString" },
+        "rules": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/SelectionRule" }
+        }
+      }
+    },
+
+    "SelectionRule": {
+      "type": "object",
+      "required": ["id", "condition", "select"],
+      "properties": {
+        "id": { "type": "string" },
+        "condition": {
+          "type": "string",
+          "description": "Dealer-compatible 布林表達式"
+        },
+        "select": { "type": "string" },
+        "tiebreak": { "type": "string" },
+        "exclude_suits": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "description": { "$ref": "#/$defs/I18nString" }
+      }
+    },
+
+    "DefensiveEntry": {
+      "type": "object",
+      "properties": {
+        "when_opponent_opens": {
+          "oneOf": [
+            { "type": "string" },
+            { "$ref": "#/$defs/OpponentPattern" }
+          ]
+        },
+        "actions": { "type": "object" },
+        "convention_ref": { "type": "string" }
+      }
+    },
+
+    "DefenseToEntry": {
+      "type": "object",
+      "required": ["opponent_system"],
+      "properties": {
+        "opponent_system": { "type": "string" },
+        "description": { "$ref": "#/$defs/I18nString" },
+        "when_opponent_opens": {
+          "type": "object",
+          "properties": {
+            "bid": { "type": "string" },
+            "known_artificial": { "type": "boolean" },
+            "known_range": { "$ref": "#/$defs/Range" }
+          }
+        },
+        "actions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/BidNode" }
+        },
+        "convention_ref": { "type": "string" }
+      }
+    },
+
+    "SystemMetadata": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "$ref": "#/$defs/I18nString" },
+        "version": { "type": "string" },
+        "authors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "contact": { "type": "string" },
+              "role": { "type": "string" }
+            }
+          }
+        },
+        "description": { "$ref": "#/$defs/I18nString" },
+        "base": { "type": ["string", "null"] },
+        "locale": { "type": "string" },
+        "license": { "type": "string" },
+        "completeness": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "enum": ["complete", "partial", "draft", "todo"]
+          }
+        }
+      }
+    },
+
+    "Definitions": {
+      "type": "object",
+      "properties": {
+        "strength_methods": { "type": "object" },
+        "patterns": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "description": { "$ref": "#/$defs/I18nString" },
+              "shapes": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[0-9]+-[0-9]+-[0-9]+-[0-9]+$",
+                  "description": "通用形式（由大到小）"
+                }
+              },
+              "shapes_exact": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[0-9*]+=[0-9*]+=[0-9*]+=[0-9*]+$",
+                  "description": "精確形式（♠=♥=♦=♣）"
+                }
+              },
+              "constraints": { "type": "object" }
+            }
+          }
+        },
+        "suit_qualities": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "description": { "$ref": "#/$defs/I18nString" },
+              "top3_honors": { "$ref": "#/$defs/Range" },
+              "top5_honors": { "$ref": "#/$defs/Range" },
+              "min_length": { "type": "integer" }
+            }
+          }
+        },
+        "suit_groups": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["C", "D", "H", "S"] }
+          }
+        },
+        "bid_semantics": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "resolve": { "type": "string" },
+              "description": { "$ref": "#/$defs/I18nString" }
+            }
+          }
+        },
+        "dealer_functions": {
+          "type": "object",
+          "description": "Dealer script 函數與 BBDSL 的對應關係文件"
+        }
+      }
+    },
+
+    "ValidationRules": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "severity"],
+            "properties": {
+              "id": { "type": "string" },
+              "description": { "$ref": "#/$defs/I18nString" },
+              "severity": { "type": "string", "enum": ["error", "warning", "info"] },
+              "scope": { "type": "string" },
+              "pattern": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "ExportConfig": {
+      "type": "object",
+      "properties": {
+        "bboalert": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "format_version": { "type": "string" },
+            "include_comments": { "type": "boolean" },
+            "seat_dependent": { "type": "boolean" },
+            "locale": { "type": "string" },
+            "expand_foreach": { "type": "boolean" }
+          }
+        },
+        "bml": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "output_formats": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["html", "latex", "pdf"] }
+            },
+            "include_suit_symbols": { "type": "boolean" },
+            "locale": { "type": "string" }
+          }
+        },
+        "convention_card": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "format": { "type": "string", "enum": ["wbf", "acbl"] },
+            "locale": { "type": "string" }
+          }
+        },
+        "pbn": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "version": { "type": "string" },
+            "embed_bid_meanings": { "type": "boolean" },
+            "embed_decision_trace": { "type": "boolean" },
+            "generate_dealer_conditions": { "type": "boolean" }
+          }
+        },
+        "bss": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "via_bml": { "type": "boolean" }
+          }
+        },
+        "lin": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "embed_bid_annotations": { "type": "boolean" },
+            "handviewer_compatible": { "type": "boolean" }
+          }
+        },
+        "ai_knowledge_base": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "format": { "type": "string", "enum": ["json", "jsonl"] },
+            "flatten_sequences": { "type": "boolean" },
+            "include_nl_descriptions": { "type": "boolean" },
+            "locale": { "type": "string" }
+          }
+        }
+      }
+    },
+
+    "ImportConfig": {
+      "type": "object",
+      "properties": {
+        "bml": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "version": { "type": "string" },
+            "mark_unresolved": { "type": "boolean" },
+            "preserve_original_text": { "type": "boolean" },
+            "generate_todo_list": { "type": "boolean" }
+          }
+        },
+        "bboalert": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "preserve_raw_text": { "type": "boolean" }
+          }
+        },
+        "pbn": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "read_embedded_bbdsl": { "type": "boolean" },
+            "infer_system": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}
